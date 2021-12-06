@@ -20,6 +20,11 @@ int main(int argc, char** argv)
   std::stringstream cmd;
   cmd << "clang++ "
       << "--std=c++20 "
+      << "-Wall "
+      << "-Werror "
+      << "-Wextra "
+      << "-Wpedantic "
+      << "-Wconversion "
       << filepath 
       << " -o " << exe_path;
   std::cout << cmd.str() << std::endl;

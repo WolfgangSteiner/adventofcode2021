@@ -77,3 +77,18 @@ intvec_t to_int(const strvec_t& strvec)
     }
     return res;
 }
+
+
+std::string input_filename(int day)
+{
+    char buffer[128];
+    sprintf(buffer, "data/day%02d.txt", day);
+    return std::string(buffer);
+}
+
+std::string test_filename(int day)
+{
+    char buffer[128];
+    sprintf(buffer, "data/day%02d_test.txt", day);
+    return std::string(buffer);
+}

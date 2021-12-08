@@ -3,24 +3,6 @@ class DigitClassifier:
         self.lookup = {}
         self.reverse_lookup = {}
 
-    def fit_top(self):
-        segments_seven = self.reverse_lookup[7].split()
-        segments_one = self.reverse_lookup[1].split()
-        for s in segments_one:
-            if s not in segments_seven:
-                return s
-
-    def segments_for_digit(self, digit):
-        return self.reverse_lookup[digit].split()
-
-    def erase_segments_for_digit(self, sym, digit):
-        res = []
-        segments_to_erase = self.segments_for_digit(digit)
-        for s in sym.split():
-            if s not in segments_to_erase:
-                res.append(s)
-        return res 
-
     def sym_contains_segments(self, sym, segments):
         for s in segments:
             if s not in sym:

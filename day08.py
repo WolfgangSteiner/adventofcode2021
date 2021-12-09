@@ -9,6 +9,7 @@ class DigitClassifier:
                 return False
         return True
 
+
     def fit_three(self):
         seven = self.reverse_lookup[7]
         for c in self.reverse_lookup[3].copy():
@@ -72,11 +73,10 @@ class DigitClassifier:
         
     def set_digit(self, sym, value):
         self.lookup[sym] = value
-
-        if isinstance(value, list):
+        try:
             for v in value:
                 self.reverse_lookup[v].append(sym)
-        else:
+        except:
             self.reverse_lookup[value] = sym
 
     def predict(self, sym):

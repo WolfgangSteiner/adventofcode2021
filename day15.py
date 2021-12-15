@@ -10,8 +10,8 @@ def manhatten_distance(pos_a, pos_b):
     return np.sum(abs(np.array(pos_b) - np.array(pos_a)))
 
 
-def get_neighbors(pos, matrix):
-    rows, cols = matrix.shape
+def get_neighbors(pos, matrix_shape):
+    rows, cols = matrix_shape
     result = []
     for row in range(max(pos[0] - 1, 0), min(pos[0] + 2, rows)):
         result.append((row, pos[1]))
@@ -25,12 +25,21 @@ def calculate_risk(matrix, came_from, start_pos, end_pos):
     result = 0
     current_pos = end_pos
     while (current_pos != start_pos):
-        result += matrix[current_pos]
+        result += get_weight(matrix, current_pos)
         current_pos = came_from[current_pos]
     return result
 
 
-def a_star(matrix, start_pos, end_pos):
+def get_weight(matrix, pos):
+    rows, cols = matrix.shape
+    row, col = pos
+    weight = matrix[pos[0] % rows, pos[1] % cols]
+    tile_pos = [row // rows, col // cols]
+    weight_offset = np.sum(tile_pos)
+    return ((weight + weight_offset) - 1) % 9 + 1
+
+
+def a_star(matrix, start_pos, end_pos, factor):
     int_max = np.iinfo(int).max
     g_score = defaultdict(lambda:int_max)
     f_score = defaultdict(lambda:int_max)
@@ -38,6 +47,8 @@ def a_star(matrix, start_pos, end_pos):
     f_score[end_pos] = manhatten_distance(start_pos, end_pos)
     came_from = {}
     open_set = [start_pos]
+    rows, cols = matrix.shape
+    matrix_shape = [rows * factor, cols * factor]
 
     while len(open_set):
         open_set.sort(key=lambda pos: f_score[pos])
@@ -45,8 +56,8 @@ def a_star(matrix, start_pos, end_pos):
         if current == end_pos:
             return calculate_risk(matrix, came_from, start_pos, end_pos)
 
-        for neighbor in get_neighbors(current, matrix):
-            weight = matrix[neighbor]
+        for neighbor in get_neighbors(current, matrix_shape):
+            weight = get_weight(matrix, neighbor)
             tentative_g_score = g_score[current] + weight
             if tentative_g_score < g_score[neighbor]:
                 came_from[neighbor] = current
@@ -59,9 +70,14 @@ def a_star(matrix, start_pos, end_pos):
 def main():
     matrix = parse_matrix("data/day15.txt")
     start_pos = (0,0)
-    end_pos = (matrix.shape[0] - 1, matrix.shape[1] - 1)
-    res1 = a_star(matrix, start_pos, end_pos)
+    rows, cols = matrix.shape
+    end_pos = (rows - 1, cols - 1)
+    res1 = a_star(matrix, start_pos, end_pos, factor=1)
     print(f"Part One: {res1}")
+    factor = 5
+    end_pos = (rows * factor - 1, cols * factor - 1)
+    res2 = a_star(matrix, start_pos, end_pos, factor=5)
+    print(f"Part Two: {res2}")
 
 
 if __name__ == "__main__":

@@ -9,38 +9,18 @@ TYPE_GREATER_THAN = 5
 TYPE_LESS_THAN = 6
 TYPE_EQUAL_TO = 7
 
-hex_map = {
-    '0': [0,0,0,0],
-    '1': [0,0,0,1],
-    '2': [0,0,1,0],
-    '3': [0,0,1,1],
-    '4': [0,1,0,0],
-    '5': [0,1,0,1],
-    '6': [0,1,1,0],
-    '7': [0,1,1,1],
-    '8': [1,0,0,0],
-    '9': [1,0,0,1],
-    'A': [1,0,1,0],
-    'B': [1,0,1,1],
-    'C': [1,1,0,0],
-    'D': [1,1,0,1],
-    'E': [1,1,1,0],
-    'F': [1,1,1,1]
-}
+
+def hex_to_bin(hex_literal):
+    int_value = int(hex_literal, 16)
+    return "".join([str(int(int_value & m > 0)) for m in [8,4,2,1]])
 
 
 def bits_to_value(bits):
-    result = 0
-    shift = len(bits) - 1
-    for bit in bits:
-        result = result | (bit << shift)
-        shift -= 1
-    assert(shift == -1)
-    return result
+    return int(bits, 2)
 
 
 class Packet:
-    def __init__(self, hex_literals, bit_buffer=None):
+    def __init__(self, hex_literals, bit_buffer=""):
         self.version = 0
         self.type = 0
         self.num_bits = 0
@@ -48,13 +28,13 @@ class Packet:
         self.num_packets = -1
         self.value = 0
         self.sub_packets = []
-        self.bit_buffer = bit_buffer.copy() if bit_buffer is not None else []
+        self.bit_buffer = bit_buffer
         self.parse_hex(hex_literals)
 
     def get_bits(self, num_bits, hex_literals):
         self.num_bits += num_bits
         while len(self.bit_buffer) < num_bits:
-            self.bit_buffer += hex_map[hex_literals.pop(0)]
+            self.bit_buffer += hex_to_bin(hex_literals.pop(0))
         result = self.bit_buffer[0:num_bits]
         self.bit_buffer = self.bit_buffer[num_bits:]
         return result
@@ -80,16 +60,14 @@ class Packet:
         self.version = self.get_value(3, hex_literals)
         self.type = self.get_value(3, hex_literals)
         if self.type == TYPE_LITERAL:
-            last_group = False
-            bits_for_literal = []
-            while not last_group:
+            bits_for_literal = ""
+            while True:
                 bits = self.get_bits(5, hex_literals)
-                last_group = (bits[0] == 0)
                 bits_for_literal += bits[1:]
+                if bits[0] == '0': break
             self.value = bits_to_value(bits_for_literal)
         else:
             length_type_id = self.get_value(1, hex_literals)
-            self.sub_packets = []
             if length_type_id == 0:
                 self.num_bits_of_packets = self.get_value(15, hex_literals)
                 while self.calc_bits_of_sub_packets() < self.num_bits_of_packets:
@@ -145,7 +123,9 @@ def part_two(hex_string):
 
 
 def run_tests():
-    assert(bits_to_value([1,1,1]) == 7)
+    assert bits_to_value("111") == 7
+    assert hex_to_bin("0") == "0000"
+    assert hex_to_bin("F") == "1111"
 
     input_1 = "D2FE28"
     p1 = Packet(list(input_1))

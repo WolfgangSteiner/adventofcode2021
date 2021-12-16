@@ -28,6 +28,7 @@ hex_map = {
     'F': [1,1,1,1]
 }
 
+
 def bits_to_value(bits):
     result = 0
     shift = len(bits) - 1
@@ -36,6 +37,7 @@ def bits_to_value(bits):
         shift -= 1
     assert(shift == -1)
     return result
+
 
 class Packet:
     def __init__(self, hex_literals, bit_buffer=None):
@@ -51,15 +53,8 @@ class Packet:
 
     def get_bits(self, num_bits, hex_literals):
         self.num_bits += num_bits
-        if len(self.bit_buffer) >= num_bits:
-            pass
-        else:
-            num_bits_to_fetch = num_bits - len(self.bit_buffer)
-            num_hex_literals = num_bits_to_fetch // 4
-            if num_bits_to_fetch % 4 != 0:
-                num_hex_literals += 1
-            for i in range(num_hex_literals):
-                self.bit_buffer += hex_map[hex_literals.pop(0)]
+        while len(self.bit_buffer) < num_bits:
+            self.bit_buffer += hex_map[hex_literals.pop(0)]
         result = self.bit_buffer[0:num_bits]
         self.bit_buffer = self.bit_buffer[num_bits:]
         return result
@@ -74,6 +69,12 @@ class Packet:
             result += p.num_bits
             result += p.calc_bits_of_sub_packets()
         return result
+
+    def parse_sub_package(self, hex_literals):
+        new_packet = Packet(hex_literals, self.bit_buffer)
+        self.sub_packets.append(new_packet)
+        self.bit_buffer = new_packet.bit_buffer
+        new_packet.bit_buffer = []
 
     def parse_hex(self, hex_literals):
         self.version = self.get_value(3, hex_literals)
@@ -92,17 +93,11 @@ class Packet:
             if length_type_id == 0:
                 self.num_bits_of_packets = self.get_value(15, hex_literals)
                 while self.calc_bits_of_sub_packets() < self.num_bits_of_packets:
-                    new_packet = Packet(hex_literals, self.bit_buffer)
-                    self.sub_packets.append(new_packet)
-                    self.bit_buffer = new_packet.bit_buffer
-                    new_packet.bit_buffer = []
+                    self.parse_sub_package(hex_literals)
             else:
                 self.num_packets = self.get_value(11, hex_literals)
                 for i in range(self.num_packets):
-                    new_packet = Packet(hex_literals, self.bit_buffer)
-                    self.sub_packets.append(new_packet)
-                    self.bit_buffer = new_packet.bit_buffer
-                    new_packet.bit_buffer = []
+                    self.parse_sub_package(hex_literals)
 
     def get_all_version_numbers(self):
         result = [self.version]
@@ -141,7 +136,6 @@ class Packet:
 def part_one(hex_string):
     packet = Packet(list(hex_string))
     version_numbers = packet.get_all_version_numbers()
-    print(version_numbers)
     return np.sum(version_numbers)
 
 
@@ -150,8 +144,9 @@ def part_two(hex_string):
     return packet.evaluate_expression()
 
 
-def test():
+def run_tests():
     assert(bits_to_value([1,1,1]) == 7)
+
     input_1 = "D2FE28"
     p1 = Packet(list(input_1))
     assert(p1.type == TYPE_LITERAL)
@@ -163,14 +158,12 @@ def test():
     assert(p2.version == 1)
     assert(p2.type == 6)
     assert(p2.num_bits_of_packets == 27)
-    print(p2.__dict__)
 
     input_3 = "EE00D40C823060"
     p3 = Packet(list(input_3))
     assert(p3.version == 7)
     assert(p3.type == 3)
     assert(p3.num_packets == 3)
-    print(p3.__dict__)
 
     assert(part_one("8A004A801A8002F478") == 16)
     assert(part_one("620080001611562C8802118E34") == 12)
@@ -188,11 +181,10 @@ def test():
 
 
 def main():
-    test()
-    res1 = part_one(open("data/day16.txt").read().rstrip())
-    print(f"Part One: {res1}")
-    res2 = part_two(open("data/day16.txt").read().rstrip())
-    print(f"Part Two: {res2}")
+    run_tests()
+    input = open("data/day16.txt").read().rstrip()
+    print("Part One:", part_one(input))
+    print("Part Two:", part_two(input))
 
 
 if __name__ == "__main__":
